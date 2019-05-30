@@ -1,9 +1,14 @@
 #ifndef DECLARATIONS_H
 #define DECLARATIONS_H
 
-enum channel_e {
+enum class channel_e {
   LEFT,
   RIGHT
+};
+
+enum class direction_e {
+  FORWARD,
+  BACKWARD
 };
 
 #endif // DECLARATIONS_H

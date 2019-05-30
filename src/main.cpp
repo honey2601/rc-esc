@@ -43,7 +43,8 @@ void convertLeftStick();
 void convertRightStick();
 void waitForTransmitter();
 void cleanup (channel_e stick);
-
+void generatePwm(uint32_t value, channel_e channel, direction_e direction);
+uint8_t convertToPWMRange(uint32_t value);
 
 void setup() {
   // Set input pins
@@ -58,7 +59,6 @@ void setup() {
   pinMode(enable_motor_1, OUTPUT);
   pinMode(enable_motor_2, OUTPUT);
 
-
   enableInterrupt(chR, convertRightStick, CHANGE);
   enableInterrupt(chL, convertLeftStick, CHANGE);
 
@@ -66,7 +66,8 @@ void setup() {
   delay(2000);
   waitForTransmitter();
   Serial.begin(115200);
-
+  digitalWrite(enable_motor_1, HIGH);
+  digitalWrite(enable_motor_2, HIGH);
 }
 
 void loop() {
@@ -77,26 +78,36 @@ void loop() {
   Serial.print("RRef:");
   Serial.println(timerRRef);
 #endif
+  if (timerLRef <= 1500) {
+     // left back
+     generatePwm(timerLRef, channel_e::LEFT, direction_e::BACKWARD);
+  } else {
+    generatePwm(timerLRef, channel_e::LEFT, direction_e::FORWARD);
+  }
+  if (timerRRef <= 1500) {
+    // right back
+    generatePwm(timerRRef, channel_e::RIGHT, direction_e::BACKWARD);
+  } else {
+    generatePwm(timerRRef, channel_e::RIGHT, direction_e::FORWARD);
+  }
 }
-// TODO add conversion of time to pwm values
+
 void convertRightStick() {
   if(digitalRead(chR) == HIGH) {
     timerR = micros();
   }
     tempR = micros() - timerR;
     timerRRef = correction_val - tempR;
-    cleanup(RIGHT);
+    cleanup(channel_e::RIGHT);
 }
-// TODO add conversion of time to pwm values
 
 void convertLeftStick() {
   if(digitalRead(chL) == HIGH) {
     timerL = micros();
   }
   else {
-
     timerLRef = micros() - timerL;
-    cleanup(LEFT);
+    cleanup(channel_e::LEFT);
   }
 }
 
@@ -133,9 +144,9 @@ void waitForTransmitter() {
   }
 }
 
-// cleanup inputs regarding dead space
+// cleanup inputs regarding dead space for right stick mainly
 void cleanup(channel_e stick) {
-  if(stick == LEFT) {
+  if(stick == channel_e::LEFT) {
     uint32_t temp = timerLRef;
     if((temp > (deadlo)) && (temp < (deadhi))) {
       timerLRef = rc_neutral;
@@ -150,7 +161,7 @@ void cleanup(channel_e stick) {
       timerLRef = rc_neutral;
     }
   }
-  if(stick == RIGHT) {
+  if(stick == channel_e::RIGHT) {
     uint32_t temp = timerRRef;
     if((temp > (deadlo)) && (temp < (deadhi))) {
       timerRRef = rc_neutral;
@@ -167,31 +178,44 @@ void cleanup(channel_e stick) {
   }
 }
 
+// alternatively occr1a etc.. check out atmega32u4 timers
+void generatePwm(uint32_t value, channel_e channel, direction_e direction) {
+  uint8_t val = convertToPWMRange(value);
+  if (channel == channel_e::LEFT) {
+    if(direction == direction_e::FORWARD){
+      // disable other direction
+      analogWrite(pwm_motor_1B, 0);
+      analogWrite(pwm_motor_1A, val);
+    } else {
+      // disable other direction
+      analogWrite(pwm_motor_1A, 0);
+      analogWrite(pwm_motor_1B, val);
+    }
+  } else {
+    if(direction == direction_e::FORWARD){
+      // disable other direction
+      analogWrite(pwm_motor_2B, 0);
+      analogWrite(pwm_motor_2A, val);
+    } else {
+      // disable other direction
+      analogWrite(pwm_motor_2A, 0);
+      analogWrite(pwm_motor_2B, val);
+    }
+  }
+}
 
-// add arduino pwm functionality  see here for examples
-// https://arduino-projekte.webnode.at/registerprogrammierung/fast-pwm/
-// pwm setup
-// cli(); // disable global interrupts
-//
-//      // init output pins
-//      DDRC |= (1<<DDC6); // PC6 as output / OC3A as output / D5 as output // OC3A als PWM-Pin / Timer/Counter1
-//      DDRC |= (1<<DDC7); // onboard LED - Arduino Pin 13
-//
-//      //PRR1 |= 1<<PRUSB; // disable usb
-//
-//      TCCR3A |= (1<<COM3A0); // Toggle OC3A on compare match
-//      TCCR3B |= (1<<WGM32); // turn on CTC-Mode // Mode 4: CTC-Mode mit OCR3A als TOP
-//      TCCR3B |= (1<<CS31); // Pre-Scaler N=8
-//      TIMSK3 |= (1<<OCIE3A); // Output Compare A Match Interrupt Enable
-//
-//      // set 25 Hz -- OCR3A --> 39.999
-//      OCR3A = 60000;
-//
-//      sei(); // enable global inte
-// ISR(TIMER3_COMPA_vect)
-// {
-//   PINC |= (1<<PINC7);
-// }
-void generatePwm(uint32_t value, uint8_t pin) {
+uint8_t convertToPWMRange(uint32_t value) {
+  uint32_t val = 0;
+  double result = 0.0;
+  if(value < rc_neutral) {
+    val = 3000 - value;  //  3000 - 1200 = 1800
+    val = val - rc_neutral; // 1800 - 1500 = 300
+  } else if(value > rc_neutral) {
+    val = value - rc_neutral; // 1800 - 1500 = 300
+  } else if (value == rc_neutral) {
+    return 0;
+  }
+  result = (val / 500) * 255;
 
+  return static_cast<uint8_t>(result);
 }
