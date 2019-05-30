@@ -7,5 +7,4 @@ Currently it is using an Arduino Pro Micro 5 V clone to test it out and eventual
 Schematic
 -------------------------
 
-![Schematic](./schematic/RC-ESC-schematic.svg)
-<img src="./schematic/RC-ESC-schematic.svg">
+![Schematic](./RC-ESC-schematic_Steckplatine.png)
