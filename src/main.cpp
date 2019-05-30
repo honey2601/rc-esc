@@ -5,29 +5,29 @@
 #include <EEPROM.h>
 #include "declarations.h"
 
-const uint16_t rc_neutral = 1500;
-const uint16_t rc_max = 2000;
-const uint16_t rc_min = 1000;
-const uint16_t rc_deadband = 50;
+static constexpr uint16_t rc_neutral = 1500;
+static constexpr uint16_t rc_max = 2000;
+static constexpr uint16_t rc_min = 1000;
+static constexpr uint16_t rc_deadband = 50;
 
-const uint16_t rc_deadlow = 1150;
-const uint16_t rc_deadhigh = 1775;
-const uint16_t deadlo = rc_neutral - rc_deadband;
-const uint16_t deadhi = rc_neutral + rc_deadband;
-const uint32_t correction_val = 3000;
+static constexpr uint16_t rc_deadlow = 1150;
+static constexpr uint16_t rc_deadhigh = 1775;
+static constexpr uint16_t deadlo = rc_neutral - rc_deadband;
+static constexpr uint16_t deadhi = rc_neutral + rc_deadband;
+static constexpr uint32_t correction_val = 3000;
 
-const int chR = 7;  // rechts hoch 1100 / runter 1820 // CH 1
-// const int chLhori = 8z`; // links links 1820 / rechts 1100
-const int chL = 8;  // links hoch 1800 / runter 1100 // CH 3
-// const int chRhori = 10; // rechts links 1100 / rechts 1820
+static constexpr int chR = 7;  // rechts hoch 1100 / runter 1820 // CH 1
+// static constexpr int chLhori = 8z`; // links links 1820 / rechts 1100
+static constexpr int chL = 8;  // links hoch 1800 / runter 1100 // CH 3
+// static constexpr int chRhori = 10; // rechts links 1100 / rechts 1820
 
-const uint8_t pwm_motor_1A = 5;
-const uint8_t pwm_motor_1B = 6;
-const uint8_t pwm_motor_2A = 9;
-const uint8_t pwm_motor_2B = 10;
+static constexpr uint8_t pwm_motor_1A = 5;
+static constexpr uint8_t pwm_motor_1B = 6;
+static constexpr uint8_t pwm_motor_2A = 9;
+static constexpr uint8_t pwm_motor_2B = 10;
 
-const uint8_t enable_motor_1 = 14;
-const uint8_t enable_motor_2 = 15;
+static constexpr uint8_t enable_motor_1 = 14;
+static constexpr uint8_t enable_motor_2 = 15;
 
 volatile uint32_t timerL;
 volatile uint32_t timerR;
@@ -36,9 +36,7 @@ volatile uint32_t timerRRef;
 volatile uint32_t tempR;
 volatile uint32_t tempL;
 
-
-
-
+#define debug 1
 
 // define local functions
 void convertLeftStick();
@@ -65,19 +63,20 @@ void setup() {
   enableInterrupt(chL, convertLeftStick, CHANGE);
 
   // WAIT FOR INIT SEQUENCE LEFT HIGH RIGHT LOW FOR 2 SECONDS
-  // waitForTransmitter();
   delay(2000);
+  waitForTransmitter();
   Serial.begin(115200);
 
 }
 
 void loop() {
+#if debug
   Serial.print("LRef:");
   Serial.print(timerLRef);
 
   Serial.print("RRef:");
   Serial.println(timerRRef);
-
+#endif
 }
 // TODO add conversion of time to pwm values
 void convertRightStick() {
@@ -104,7 +103,7 @@ void convertLeftStick() {
 void waitForTransmitter() {
   volatile uint32_t count = micros();
   volatile uint32_t count_start = micros();
-  uint32_t count_end = 1000000;
+  uint32_t count_end = 10000;
   while(1) {
     if (count > (count_start + count_end) ) {
       return;
@@ -112,10 +111,24 @@ void waitForTransmitter() {
 
     if ((timerLRef < 1200) && (timerRRef > 1700)) {
       count = micros();
+      #if debug
+      Serial.print("Init LRef:");
+      Serial.print(timerLRef);
+
+      Serial.print("Init RRef:");
+      Serial.println(timerRRef);
+      #endif
     }
     else {
       count_start = micros();
       count = micros();
+      #if debug
+      Serial.print("Error LRef:");
+      Serial.print(timerLRef);
+
+      Serial.print("Error RRef:");
+      Serial.println(timerRRef);
+      #endif
     }
   }
 }
@@ -133,9 +146,9 @@ void cleanup(channel_e stick) {
     else if ((temp < rc_deadlow) && (temp > rc_min)) {
       timerLRef = rc_min;
     }
-    // else if ((temp > rc_max) || (temp < rc_min)){ // no valid value set neutral
-    //   timerLRef = rc_neutral;
-    // }
+    else if ((temp > rc_max) || (temp < rc_min)){ // no valid value set neutral
+      timerLRef = rc_neutral;
+    }
   }
   if(stick == RIGHT) {
     uint32_t temp = timerRRef;
@@ -148,23 +161,37 @@ void cleanup(channel_e stick) {
     else if ((temp < rc_deadlow) && (temp > rc_min)) {
       timerRRef = rc_min;
     }
-    // else if ((temp > rc_max) || (temp < rc_min)){ // no valid value set neutral
-    //   timerRRef = rc_neutral;
-    // }
+    else if ((temp > rc_max) || (temp < rc_min)){ // no valid value set neutral
+      timerRRef = rc_neutral;
+    }
   }
 }
 
 
+// add arduino pwm functionality  see here for examples
+// https://arduino-projekte.webnode.at/registerprogrammierung/fast-pwm/
+// pwm setup
+// cli(); // disable global interrupts
+//
+//      // init output pins
+//      DDRC |= (1<<DDC6); // PC6 as output / OC3A as output / D5 as output // OC3A als PWM-Pin / Timer/Counter1
+//      DDRC |= (1<<DDC7); // onboard LED - Arduino Pin 13
+//
+//      //PRR1 |= 1<<PRUSB; // disable usb
+//
+//      TCCR3A |= (1<<COM3A0); // Toggle OC3A on compare match
+//      TCCR3B |= (1<<WGM32); // turn on CTC-Mode // Mode 4: CTC-Mode mit OCR3A als TOP
+//      TCCR3B |= (1<<CS31); // Pre-Scaler N=8
+//      TIMSK3 |= (1<<OCIE3A); // Output Compare A Match Interrupt Enable
+//
+//      // set 25 Hz -- OCR3A --> 39.999
+//      OCR3A = 60000;
+//
+//      sei(); // enable global inte
+// ISR(TIMER3_COMPA_vect)
+// {
+//   PINC |= (1<<PINC7);
+// }
 void generatePwm(uint32_t value, uint8_t pin) {
 
 }
-
-// todo function here to calibrate high low and neutral values
-// potinetially use button to trigger and led to indicate next
-
-// todo add function to stop if values are outside of transmitter range
-
-
-// todo add sketch with kicad
-
-// todo add capacitors to handle direction changes

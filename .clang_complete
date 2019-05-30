@@ -3,9 +3,12 @@
 -IE:\gDrive\Projekte\Arduino\rc-esc\lib\EnableInterrupt
 -IE:\gDrive\Projekte\Arduino\rc-esc\lib\EnableInterrupt\utility
 -IC:\Users\Paul\.platformio\packages\framework-arduinoavr\libraries\__cores__\arduino\EEPROM\src
+-IC:\Users\Paul\.platformio\lib\Adafruit NeoPixel_ID28
+-IC:\Users\Paul\.platformio\lib\ClickEncoder_ID3518
 -IC:\Users\Paul\.platformio\lib\EnableInterrupt_ID311
 -IC:\Users\Paul\.platformio\lib\EnableInterrupt_ID311\utility
 -IC:\Users\Paul\.platformio\lib\HID-Project_ID523\src
+-IC:\Users\Paul\.platformio\lib\TimerOne_ID131
 -IC:\Users\Paul\.platformio\packages\framework-arduinoavr\libraries\__cores__\arduino\HID\src
 -IC:\Users\Paul\.platformio\packages\framework-arduinoavr\libraries\__cores__\arduino\SPI\src
 -IC:\Users\Paul\.platformio\packages\framework-arduinoavr\libraries\__cores__\arduino\SoftwareSerial\src
