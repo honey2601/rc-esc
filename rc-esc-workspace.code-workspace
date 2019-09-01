@@ -3,10 +3,6 @@
 		{
 			"name": "rc-esc",
 			"path": "."
-		},
-		{
-			"name": "meh",
-			"path": "/home/paul/Documents/PlatformIO/Projects/meh"
 		}
 	],
 	"settings": {
