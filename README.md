@@ -11,3 +11,28 @@ Schematic
 -------------------------
 
 ![Schematic](./schematic/RC-ESC-schematic_Steckplatine.png)
+
+
+Development Environment
+------------------------
+For development the Platformio IDE is used. Best way to get started is the following:
+
+* Install [Visual Studio Code](https://code.visualstudio.com/)
+
+* Install the [Platformio extension](https://marketplace.visualstudio.com/items?itemName=platformio.platformio-ide)
+
+Clone the repository:
+
+    git@github.com:DonPavlov/rc-esc.git
+
+Open the Folder containg the platformio.ini in Visual Studio Code.
+
+
+Troubleshooting
+------------------------
+Ubuntu:
+* Upload is not successfull although the correct port is enabled.
+
+Do the following:
+
+    sudo systemctl stop ModemManager.service
