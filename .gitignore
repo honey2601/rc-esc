@@ -33,5 +33,4 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
-
-rc-esc-workspace.code-workspace
+*.code-workspace
