@@ -44,7 +44,10 @@ void convertRightStick();
 void waitForTransmitter();
 void cleanup (channel_e stick);
 void generatePwm(uint32_t value, channel_e channel, direction_e direction);
-uint8_t convertToPWMRange(uint32_t value);
+uint8_t convertToPWMRange(uint32_t value); 
+
+void setup();
+void loop();
 
 void setup() {
   // Set input pins
@@ -63,7 +66,7 @@ void setup() {
   enableInterrupt(chL, convertLeftStick, CHANGE);
 
   // WAIT FOR INIT SEQUENCE LEFT HIGH RIGHT LOW FOR 2 SECONDS
-  delay(2000);
+  delay(5000);
   waitForTransmitter();
   Serial.begin(115200);
   digitalWrite(enable_motor_1, HIGH);
