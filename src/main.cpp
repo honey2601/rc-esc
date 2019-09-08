@@ -211,7 +211,7 @@ uint8_t convertToPWMRange(uint32_t value) {
   } else if (value == rc_neutral) {
     return 0;
   }
-  result = (val / 500) * 255;
+  result = ((val / 500) * 175)+ 75; // motor only drives at high pwms give it a boost of 75
 
   return static_cast<uint8_t>(result);
 }
