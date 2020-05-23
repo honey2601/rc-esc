@@ -1,7 +1,7 @@
 #include "drv8835_driver.h"
 
-const unsigned char DRV8835MotorShield::_M1DIR = 7;
-const unsigned char DRV8835MotorShield::_M2DIR = 8;
+const unsigned char DRV8835MotorShield::_M1DIR = 15;
+const unsigned char DRV8835MotorShield::_M2DIR = 14;
 const unsigned char DRV8835MotorShield::_M1PWM = 9;
 const unsigned char DRV8835MotorShield::_M2PWM = 10;
 boolean DRV8835MotorShield::_flipM1 = false;

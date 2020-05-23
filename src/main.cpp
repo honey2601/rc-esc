@@ -23,10 +23,10 @@ static constexpr uint32_t correction_val = 3000;
 static constexpr uint8_t LED_PIN = 13;
 
 // int0
-static constexpr int chR = 3; // rechts hoch 1100 / runter 1820 // CH 1
+static constexpr int chR = 7; // rechts hoch 1100 / runter 1820 // CH 1
 // static constexpr int chLhori = 8; // links links 1820 / rechts 1100
 // int1
-static constexpr int chL = 2; // links hoch 1800 / runter 1100 // CH 3
+static constexpr int chL = 8; // links hoch 1800 / runter 1100 // CH 3
 // static constexpr int chRhori = 10; // rechts links 1100 / rechts 1820
 
 // static constexpr uint8_t pwm_motor_1 = 5;
