@@ -1,12 +1,13 @@
 // inspired by
 // http://rcarduino.blogspot.com/2012/05/interfacing-rc-channels-to-l293d-motor.html
 
-// ecksteinimg.de/Datasheet/Pololu/PO2135.pdf
+// http://ecksteinimg.de/Datasheet/Pololu/PO2135.pdf
 
-#include "declarations.h"s
+#include "declarations.h"
 #include <Arduino.h>
 #include <EEPROM.h>
 #include <EnableInterrupt.h>
+#include "drv8835_driver.h"
 
 static constexpr uint32_t rc_neutral = 1500;
 static constexpr uint32_t rc_max = 2000;
@@ -19,16 +20,20 @@ static constexpr uint32_t deadlo = rc_neutral - rc_deadband;
 static constexpr uint32_t deadhi = rc_neutral + rc_deadband;
 static constexpr uint32_t correction_val = 3000;
 
-static constexpr int chR = 7; // rechts hoch 1100 / runter 1820 // CH 1
-// static constexpr int chLhori = 8z`; // links links 1820 / rechts 1100
-static constexpr int chL = 8; // links hoch 1800 / runter 1100 // CH 3
+static constexpr uint8_t LED_PIN = 13;
+
+// int0
+static constexpr int chR = 3; // rechts hoch 1100 / runter 1820 // CH 1
+// static constexpr int chLhori = 8; // links links 1820 / rechts 1100
+// int1
+static constexpr int chL = 2; // links hoch 1800 / runter 1100 // CH 3
 // static constexpr int chRhori = 10; // rechts links 1100 / rechts 1820
 
-static constexpr uint8_t pwm_motor_1 = 5;
-static constexpr uint8_t pwm_motor_2 = 9;
+// static constexpr uint8_t pwm_motor_1 = 5;
+// static constexpr uint8_t pwm_motor_2 = 9;
 
-static constexpr uint8_t phase_motor_1 = 14;
-static constexpr uint8_t phase_motor_2 = 15;
+// static constexpr uint8_t phase_motor_1 = 14;
+// static constexpr uint8_t phase_motor_2 = 15;
 
 volatile uint32_t timerL;
 volatile uint32_t timerR;
@@ -36,6 +41,8 @@ volatile uint32_t timerLRef;
 volatile uint32_t timerRRef;
 volatile uint32_t tempR;
 volatile uint32_t tempL;
+
+DRV8835MotorShield motors;
 
 #define debug 1
 
@@ -58,26 +65,102 @@ void setup()
   pinMode(chR, INPUT);
   pinMode(chL, INPUT);
 
+   pinMode(LED_PIN, OUTPUT);
   // Setup output pins
-  pinMode(pwm_motor_1, OUTPUT);
-  pinMode(pwm_motor_1, OUTPUT);
-  pinMode(phase_motor_1, OUTPUT);
-  pinMode(phase_motor_2, OUTPUT);
+  // pinMode(pwm_motor_1, OUTPUT);
+  // pinMode(pwm_motor_1, OUTPUT);
+  // pinMode(phase_motor_1, OUTPUT);
+  // pinMode(phase_motor_2, OUTPUT);
 
   enableInterrupt(chR, convertRightStick, CHANGE);
   enableInterrupt(chL, convertLeftStick, CHANGE);
 
   // WAIT FOR INIT SEQUENCE LEFT HIGH RIGHT LOW FOR 2 SECONDS
   delay(5000);
-  waitForTransmitter();
+  //waitForTransmitter();
   Serial.begin(115200);
-  generatePwm(1750, channel_e::LEFT, direction_e::FORWARD);
-  delay(5000);
-  generatePwm(1500, channel_e::LEFT, direction_e::FORWARD);
+  
+  digitalWrite(LED_PIN, HIGH);
+  
+  for (int speed = 0; speed <= 400; speed++)
+  {
+    motors.setM1Speed(speed);
+    delay(2);
+  }
+
+  for (int speed = 400; speed >= 0; speed--)
+  {
+    motors.setM1Speed(speed);
+    delay(2);
+  }
+  
+  // run M1 motor with negative speed
+  
+  digitalWrite(LED_PIN, LOW);
+  
+  for (int speed = 0; speed >= -400; speed--)
+  {
+    motors.setM1Speed(speed);
+    delay(2);
+  }
+  
+  for (int speed = -400; speed <= 0; speed++)
+  {
+    motors.setM1Speed(speed);
+    delay(2);
+  }
+
+  // run M2 motor with positive speed
+  
+  digitalWrite(LED_PIN, HIGH);
+  
+  for (int speed = 0; speed <= 400; speed++)
+  {
+    motors.setM2Speed(speed);
+    delay(2);
+  }
+
+  for (int speed = 400; speed >= 0; speed--)
+  {
+    motors.setM2Speed(speed);
+    delay(2);
+  }
+  
+  // run M2 motor with negative speed
+  
+  digitalWrite(LED_PIN, LOW);
+  
+  for (int speed = 0; speed >= -400; speed--)
+  {
+    motors.setM2Speed(speed);
+    delay(2);
+  }
+  
+  for (int speed = -400; speed <= 0; speed++)
+  {
+    motors.setM2Speed(speed);
+    delay(2);
+  }
+  
+  delay(500);
+
 }
 
 void loop()
 {
+  // for(int i = 0; i < 500; i+=10) {
+  //   generatePwm(1500+i, channel_e::LEFT, direction_e::FORWARD); 
+  //   delay(50);
+  // }
+  // generatePwm(1500, channel_e::LEFT, direction_e::FORWARD);
+  // delay(5000);
+  // for(int i = 0; i < 500; i+=10) {
+  //   generatePwm(1500+i, channel_e::LEFT, direction_e::BACKWARD); 
+  //   delay(50);
+  // }
+  // generatePwm(1500, channel_e::LEFT, direction_e::BACKWARD);
+  // delay(5000);
+
   // #if debug
   //   Serial.print("LRef:");
   //   Serial.print(timerLRef);
@@ -103,6 +186,7 @@ void loop()
   //   {
   //     generatePwm(timerRRef, channel_e::RIGHT, direction_e::FORWARD);
   //   }
+  
 }
 
 void convertRightStick()
@@ -216,15 +300,17 @@ void generatePwm(uint32_t value, channel_e channel, direction_e direction)
   {
     if (direction == direction_e::FORWARD)
     {
-      // phase to forward
-      digitalWrite(phase_motor_1, 0);
-      analogWrite(pwm_motor_1, val);
+      // phase to forward 
+      // TODO
+      // digitalWrite(phase_motor_1, 0);
+      // analogWrite(pwm_motor_1, val);
     }
     else
     {
       // phase to backward
-      analogWrite(phase_motor_1, 1);
-      analogWrite(pwm_motor_1, val);
+      // TODO
+      // analogWrite(phase_motor_1, 1);
+      // analogWrite(pwm_motor_1, val);
     }
   }
   else
@@ -232,14 +318,16 @@ void generatePwm(uint32_t value, channel_e channel, direction_e direction)
     if (direction == direction_e::FORWARD)
     {
       // phase to forward
-      analogWrite(phase_motor_2, 0);
-      analogWrite(pwm_motor_2, val);
+      // TODO
+      // analogWrite(phase_motor_2, 0);
+      // analogWrite(pwm_motor_2, val);
     }
     else
     {
       // phase to backward
-      analogWrite(phase_motor_2, 1);
-      analogWrite(pwm_motor_2, val);
+      // TODO
+      // analogWrite(phase_motor_2, 1);
+      // analogWrite(pwm_motor_2, val);
     }
   }
 }
