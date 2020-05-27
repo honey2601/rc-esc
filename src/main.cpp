@@ -29,11 +29,6 @@ static constexpr int chR = 7; // rechts hoch 1100 / runter 1820 // CH 1
 static constexpr int chL = 8; // links hoch 1800 / runter 1100 // CH 3
 // static constexpr int chRhori = 10; // rechts links 1100 / rechts 1820
 
-// static constexpr uint8_t pwm_motor_1 = 5;
-// static constexpr uint8_t pwm_motor_2 = 9;
-
-// static constexpr uint8_t phase_motor_1 = 14;
-// static constexpr uint8_t phase_motor_2 = 15;
 
 volatile uint32_t timerL;
 volatile uint32_t timerR;
@@ -54,7 +49,7 @@ void convertRightStick2();
 void waitForTransmitter();
 void cleanup(channel_e stick);
 void generatePwm(uint32_t value, channel_e channel, direction_e direction);
-uint8_t convertToPWMRange(uint32_t value);
+uint16_t convertToPWMRange(uint32_t value);
 
 void setup();
 void loop();
@@ -65,19 +60,14 @@ void setup()
   pinMode(chR, INPUT);
   pinMode(chL, INPUT);
 
-   pinMode(LED_PIN, OUTPUT);
-  // Setup output pins
-  // pinMode(pwm_motor_1, OUTPUT);
-  // pinMode(pwm_motor_1, OUTPUT);
-  // pinMode(phase_motor_1, OUTPUT);
-  // pinMode(phase_motor_2, OUTPUT);
-
+  pinMode(LED_PIN, OUTPUT);
+  
   enableInterrupt(chR, convertRightStick, CHANGE);
   enableInterrupt(chL, convertLeftStick, CHANGE);
 
   // WAIT FOR INIT SEQUENCE LEFT HIGH RIGHT LOW FOR 2 SECONDS
   delay(5000);
-  //waitForTransmitter();
+  waitForTransmitter();
   Serial.begin(115200);
   
   digitalWrite(LED_PIN, HIGH);
@@ -148,44 +138,32 @@ void setup()
 
 void loop()
 {
-  // for(int i = 0; i < 500; i+=10) {
-  //   generatePwm(1500+i, channel_e::LEFT, direction_e::FORWARD); 
-  //   delay(50);
-  // }
-  // generatePwm(1500, channel_e::LEFT, direction_e::FORWARD);
-  // delay(5000);
-  // for(int i = 0; i < 500; i+=10) {
-  //   generatePwm(1500+i, channel_e::LEFT, direction_e::BACKWARD); 
-  //   delay(50);
-  // }
-  // generatePwm(1500, channel_e::LEFT, direction_e::BACKWARD);
-  // delay(5000);
 
-  // #if debug
-  //   Serial.print("LRef:");
-  //   Serial.print(timerLRef);
+  #if debug
+    Serial.print("LRef:");
+    Serial.print(timerLRef);
 
-  //   Serial.print("RRef:");
-  //   Serial.println(timerRRef);
-  // #endif
-  //   if (timerLRef <= 1500)
-  //   {
-  //     // left back
-  //     generatePwm(timerLRef, channel_e::LEFT, direction_e::BACKWARD);
-  //   }
-  //   else
-  //   {
-  //     generatePwm(timerLRef, channel_e::LEFT, direction_e::FORWARD);
-  //   }
-  //   if (timerRRef <= 1500)
-  //   {
-  //     // right back
-  //     generatePwm(timerRRef, channel_e::RIGHT, direction_e::BACKWARD);
-  //   }
-  //   else
-  //   {
-  //     generatePwm(timerRRef, channel_e::RIGHT, direction_e::FORWARD);
-  //   }
+    Serial.print("RRef:");
+    Serial.println(timerRRef);
+  #endif
+    if (timerLRef <= 1500)
+    {
+      // left back
+      generatePwm(timerLRef, channel_e::LEFT, direction_e::BACKWARD);
+    }
+    else
+    {
+      generatePwm(timerLRef, channel_e::LEFT, direction_e::FORWARD);
+    }
+    if (timerRRef <= 1500)
+    {
+      // right back
+      generatePwm(timerRRef, channel_e::RIGHT, direction_e::BACKWARD);
+    }
+    else
+    {
+      generatePwm(timerRRef, channel_e::RIGHT, direction_e::FORWARD);
+    }
   
 }
 
@@ -295,47 +273,42 @@ void cleanup(channel_e stick)
 // alternatively occr1a etc.. check out atmega32u4 timers
 void generatePwm(uint32_t value, channel_e channel, direction_e direction)
 {
-  uint8_t val = convertToPWMRange(value);
+  uint16_t val = convertToPWMRange(value);
+  int backval = 0;
   if (channel == channel_e::LEFT)
   {
     if (direction == direction_e::FORWARD)
-    {
+    { 
+      motors.setM1Speed(val);
       // phase to forward 
-      // TODO
-      // digitalWrite(phase_motor_1, 0);
-      // analogWrite(pwm_motor_1, val);
+
     }
     else
     {
+      backval = val * (-1);
+      motors.setM1Speed(backval);
       // phase to backward
-      // TODO
-      // analogWrite(phase_motor_1, 1);
-      // analogWrite(pwm_motor_1, val);
     }
   }
   else
   {
     if (direction == direction_e::FORWARD)
     {
-      // phase to forward
-      // TODO
-      // analogWrite(phase_motor_2, 0);
-      // analogWrite(pwm_motor_2, val);
+      motors.setM2Speed(val);
+      // phase to forward 
     }
     else
     {
+      backval = val * (-1);
+      motors.setM2Speed(backval);
       // phase to backward
-      // TODO
-      // analogWrite(phase_motor_2, 1);
-      // analogWrite(pwm_motor_2, val);
     }
   }
 }
 
-uint8_t convertToPWMRange(uint32_t value)
+uint16_t convertToPWMRange(uint32_t value)
 {
   uint32_t val = 0;
-  double result = 0.0;
   if (value < rc_neutral)
   {
     val = 3000 - value;     //  3000 - 1200 = 1800
@@ -349,7 +322,11 @@ uint8_t convertToPWMRange(uint32_t value)
   {
     return 0;
   }
-  result = ((val / 500) * 175) + 75; // motor only drives at high pwms give it a boost of 75
 
-  return static_cast<uint8_t>(result);
+  uint32_t mapped_val = map(val, 0, 500, 0, 400);
+  
+  // TODO old code check if still valid
+  // result = ((val / 500) * 175) + 75; // motor only drives at high pwms give it a boost of 75
+
+  return static_cast<uint16_t>(mapped_val);
 }
