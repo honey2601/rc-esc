@@ -12,7 +12,7 @@ void DRV8835MotorShield::initPinsAndMaybeTimer()
   // Initialize the pin states used by the motor driver shield
   // digitalWrite is called before and after setting pinMode.
   // It called before pinMode to handle the case where the board
-  // is using an ATmega AVR to avoid ever driving the pin high, 
+  // is using an ATmega AVR to avoid ever driving the pin high,
   // even for a short time.
   // It is called after pinMode to handle the case where the board
   // is based on the Atmel SAM3X8E ARM Cortex-M3 CPU, like the Arduino
@@ -50,22 +50,22 @@ void DRV8835MotorShield::initPinsAndMaybeTimer()
 void DRV8835MotorShield::setM1Speed(int speed)
 {
   init(); // initialize if necessary
-    
+
   boolean reverse = 0;
-  
+
   if (speed < 0)
   {
     speed = -speed; // make speed a positive quantity
     reverse = 1;    // preserve the direction
   }
-  if (speed > 400)  // max 
+  if (speed > 400)  // max
     speed = 400;
-    
+
 #ifdef DRV8835MOTORSHIELD_USE_20KHZ_PWM
   OCR1A = speed;
 #else
   analogWrite(_M1PWM, speed * 51 / 80); // default to using analogWrite, mapping 400 to 255
-#endif 
+#endif
 
   if (reverse ^ _flipM1) // flip if speed was negative or _flipM1 setting is active, but not both
     digitalWrite(_M1DIR, HIGH);
@@ -77,9 +77,9 @@ void DRV8835MotorShield::setM1Speed(int speed)
 void DRV8835MotorShield::setM2Speed(int speed)
 {
   init(); // initialize if necessary
-    
+
   boolean reverse = 0;
-  
+
   if (speed < 0)
   {
     speed = -speed;  // make speed a positive quantity
@@ -87,7 +87,7 @@ void DRV8835MotorShield::setM2Speed(int speed)
   }
   if (speed > 400)  // max PWM duty cycle
     speed = 400;
-    
+
 #ifdef DRV8835MOTORSHIELD_USE_20KHZ_PWM
   OCR1B = speed;
 #else

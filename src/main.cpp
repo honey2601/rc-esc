@@ -5,7 +5,6 @@
 
 #include "declarations.h"
 #include <Arduino.h>
-#include <EEPROM.h>
 #include <EnableInterrupt.h>
 #include "drv8835_driver.h"
 
@@ -44,7 +43,6 @@ DRV8835MotorShield motors;
 // define local functions
 void convertLeftStick();
 void convertRightStick();
-void convertRightStick2();
 
 void waitForTransmitter();
 void cleanup(channel_e stick);
@@ -61,77 +59,77 @@ void setup()
   pinMode(chL, INPUT);
 
   pinMode(LED_PIN, OUTPUT);
-  
+
   enableInterrupt(chR, convertRightStick, CHANGE);
   enableInterrupt(chL, convertLeftStick, CHANGE);
-
+  motors.flipM1(true);
+  motors.setSpeeds(-50, -50);
   // WAIT FOR INIT SEQUENCE LEFT HIGH RIGHT LOW FOR 2 SECONDS
-  delay(5000);
-  waitForTransmitter();
+  // delay(5000);
+  //waitForTransmitter();
+
   Serial.begin(115200);
-  
-  digitalWrite(LED_PIN, HIGH);
-  
-  for (int speed = 0; speed <= 400; speed++)
+
+  for (int speed = 0; speed <= 100; speed++)
   {
     motors.setM1Speed(speed);
-    delay(2);
+    delay(1);
   }
 
-  for (int speed = 400; speed >= 0; speed--)
+  for (int speed = 100; speed >= 0; speed--)
   {
     motors.setM1Speed(speed);
-    delay(2);
+    delay(1);
   }
-  
+
   // run M1 motor with negative speed
-  
+
   digitalWrite(LED_PIN, LOW);
-  
+
   for (int speed = 0; speed >= -400; speed--)
   {
     motors.setM1Speed(speed);
-    delay(2);
+    delay(1);
   }
-  
+
   for (int speed = -400; speed <= 0; speed++)
   {
     motors.setM1Speed(speed);
-    delay(2);
+    delay(1);
   }
 
   // run M2 motor with positive speed
-  
+
   digitalWrite(LED_PIN, HIGH);
-  
+
   for (int speed = 0; speed <= 400; speed++)
   {
     motors.setM2Speed(speed);
-    delay(2);
+    delay(1);
   }
 
   for (int speed = 400; speed >= 0; speed--)
   {
     motors.setM2Speed(speed);
-    delay(2);
+    delay(1);
   }
-  
+
   // run M2 motor with negative speed
-  
+
   digitalWrite(LED_PIN, LOW);
-  
+
   for (int speed = 0; speed >= -400; speed--)
   {
     motors.setM2Speed(speed);
-    delay(2);
+    delay(1);
   }
-  
+
   for (int speed = -400; speed <= 0; speed++)
   {
     motors.setM2Speed(speed);
-    delay(2);
+    delay(1);
   }
-  
+
   delay(500);
 
 }
@@ -164,7 +162,7 @@ void loop()
     {
       generatePwm(timerRRef, channel_e::RIGHT, direction_e::FORWARD);
     }
-  
+
 }
 
 void convertRightStick()
@@ -273,15 +271,15 @@ void cleanup(channel_e stick)
 // alternatively occr1a etc.. check out atmega32u4 timers
 void generatePwm(uint32_t value, channel_e channel, direction_e direction)
 {
-  uint16_t val = convertToPWMRange(value);
-  int backval = 0;
+
+  volatile uint16_t val = convertToPWMRange(value);
+  volatile int backval = 0;
   if (channel == channel_e::LEFT)
   {
     if (direction == direction_e::FORWARD)
-    { 
+    {
       motors.setM1Speed(val);
-      // phase to forward 
-
+      // phase to forward
     }
     else
     {
@@ -290,12 +288,12 @@ void generatePwm(uint32_t value, channel_e channel, direction_e direction)
       // phase to backward
     }
   }
-  else
+  else if(channel == channel_e::RIGHT)
   {
     if (direction == direction_e::FORWARD)
     {
       motors.setM2Speed(val);
-      // phase to forward 
+      // phase to forward
     }
     else
     {
@@ -323,8 +321,8 @@ uint16_t convertToPWMRange(uint32_t value)
     return 0;
   }
 
-  uint32_t mapped_val = map(val, 0, 500, 0, 400);
-  
+  uint32_t mapped_val = map(val, 0, 500, 0, 200);
+
   // TODO old code check if still valid
   // result = ((val / 500) * 175) + 75; // motor only drives at high pwms give it a boost of 75
 
